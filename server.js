@@ -7,7 +7,14 @@ require('dotenv').config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://ssinteriorliving.netlify.app", // ✅ Replace with actual Netlify domain
+    "http://localhost:3000" // ✅ For local testing
+  ],
+  methods: ["GET", "POST"],
+}));
+
 app.use(express.json());
 
 // MongoDB connection
@@ -32,11 +39,10 @@ const enquirySchema = new mongoose.Schema({
 const Enquiry = mongoose.model('Enquiry', enquirySchema);
 
 // Email transporter
-// Email transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Your Gmail (e.g. ssinteriorsliving@gmail.com)
+    user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS  // App password (NOT your normal Gmail password)
   }
 });
@@ -72,7 +78,7 @@ app.post('/api/enquiry', async (req, res) => {
     // Send email notification
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: "ssinteriorsliving@gmail.com", // ✅ Fixed: Send to SS Interiors email
+      to: "ssinteriorsliving@gmail.com",
       subject: `New Interior Design Enquiry - ${name}`,
       html: `
         <h2>New Enquiry from SS Interiors Website</h2>
@@ -112,7 +118,6 @@ app.post('/api/enquiry', async (req, res) => {
     });
   }
 });
-
 
 // Get all enquiries (optional - for admin panel)
 app.get('/api/enquiries', async (req, res) => {
