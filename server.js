@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
@@ -9,41 +8,19 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: [
-    "https://ssinteriorliving.netlify.app", // ✅ Replace with actual Netlify domain
-    "http://localhost:3000" // ✅ For local testing
+    "https://ssinteriorliving.netlify.app", // Netlify frontend
+    "http://localhost:3000"                 // Local testing
   ],
   methods: ["GET", "POST"],
 }));
-
 app.use(express.json());
-
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ssinteriors', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-// Enquiry Schema
-const enquirySchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: { type: String, required: true },
-  projectType: { type: String, required: true },
-  budget: String,
-  location: { type: String, required: true },
-  timeline: String,
-  description: String,
-  submittedAt: { type: Date, default: Date.now }
-});
-
-const Enquiry = mongoose.model('Enquiry', enquirySchema);
 
 // Email transporter
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS  // App password (NOT your normal Gmail password)
+    pass: process.env.EMAIL_PASS // App password
   }
 });
 
@@ -61,21 +38,7 @@ app.post('/api/enquiry', async (req, res) => {
       description
     } = req.body;
 
-    // Save to MongoDB
-    const enquiry = new Enquiry({
-      name,
-      email,
-      phone,
-      projectType,
-      budget,
-      location,
-      timeline,
-      description
-    });
-
-    await enquiry.save();
-
-    // Send email notification
+    // Send email notification directly
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: "ssinteriorsliving@gmail.com",
@@ -107,25 +70,15 @@ app.post('/api/enquiry', async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Enquiry submitted successfully and email sent!'
+      message: 'Enquiry email sent successfully!'
     });
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error sending email:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to submit enquiry'
+      message: 'Failed to send enquiry email'
     });
-  }
-});
-
-// Get all enquiries (optional - for admin panel)
-app.get('/api/enquiries', async (req, res) => {
-  try {
-    const enquiries = await Enquiry.find().sort({ submittedAt: -1 });
-    res.json(enquiries);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch enquiries' });
   }
 });
 
