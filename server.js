@@ -32,13 +32,14 @@ app.post('/api/enquiry', async (req, res) => {
       email,
       phone,
       projectType,
+      houseType,   // ✅ added from frontend
       budget,
       location,
       timeline,
       description
     } = req.body;
 
-    // Send email notification directly
+    // Email template
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: "ssinteriorsliving@gmail.com",
@@ -53,6 +54,9 @@ app.post('/api/enquiry', async (req, res) => {
           
           <h3>Project Details:</h3>
           <p><strong>Project Type:</strong> ${projectType}</p>
+          ${projectType === "residential" && houseType 
+            ? `<p><strong>House Type:</strong> ${houseType}</p>` 
+            : ""}
           <p><strong>Budget:</strong> ${budget || 'Not specified'}</p>
           <p><strong>Location:</strong> ${location}</p>
           <p><strong>Timeline:</strong> ${timeline || 'Not specified'}</p>
