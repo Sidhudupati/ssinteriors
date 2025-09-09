@@ -8,7 +8,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: [
-    "https://ssinteriorliving.online", // Netlify frontend
+    "https://ssinteriors.online", // Netlify frontend
     "http://localhost:3000"                 // Local testing
   ],
   methods: ["GET", "POST"],
