@@ -11,8 +11,11 @@ app.use(cors({
     "https://www.ssinteriors.online", // Netlify frontend
     "http://localhost:3000"                 // Local testing
   ],
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
+app.options('*', cors());
 app.use(express.json());
 
 // Email transporter
