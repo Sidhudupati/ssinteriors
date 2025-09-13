@@ -8,8 +8,8 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: [
-    "https://www.ssinteriors.online", // Netlify frontend
-    "http://localhost:3000"                 // Local testing
+    "https://www.ssinteriors.online", // Deployed frontend
+    "http://localhost:3000"           // Local testing
   ],
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -28,65 +28,59 @@ const transporter = nodemailer.createTransport({
 });
 
 // API endpoint to handle enquiries
-app.post('/api/enquiry', async (req, res) => {
-  try {
-    const {
-      name,
-      email,
-      phone,
-      projectType,
-      houseType,   // ✅ added from frontend
-      budget,
-      location,
-      timeline,
-      description
-    } = req.body;
+app.post('/api/enquiry', (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    projectType,
+    houseType,
+    budget,
+    location,
+    timeline,
+    description
+  } = req.body;
 
-    // Email template
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: "ssinteriorsliving@gmail.com",
-      subject: `New Interior Design Enquiry - ${name}`,
-      html: `
-        <h2>New Enquiry from SS Interiors Website</h2>
-        <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
-          <h3>Contact Information:</h3>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Phone:</strong> ${phone}</p>
-          
-          <h3>Project Details:</h3>
-          <p><strong>Project Type:</strong> ${projectType}</p>
-          ${projectType === "residential" && houseType 
-            ? `<p><strong>House Type:</strong> ${houseType}</p>` 
-            : ""}
-          <p><strong>Budget:</strong> ${budget || 'Not specified'}</p>
-          <p><strong>Location:</strong> ${location}</p>
-          <p><strong>Timeline:</strong> ${timeline || 'Not specified'}</p>
-          
-          <h3>Description:</h3>
-          <p>${description || 'No additional details provided'}</p>
-          
-          <hr>
-          <p><em>Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</em></p>
-        </div>
-      `
-    };
+  // ✅ Respond immediately so frontend feels fast
+  res.status(200).json({
+    success: true,
+    message: 'Enquiry received! We will contact you soon.'
+  });
 
-    await transporter.sendMail(mailOptions);
+  // ⏳ Send email in background
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: "ssinteriorsliving@gmail.com",
+    subject: `New Interior Design Enquiry - ${name}`,
+    html: `
+      <h2>New Enquiry from SS Interiors Website</h2>
+      <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
+        <h3>Contact Information:</h3>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        
+        <h3>Project Details:</h3>
+        <p><strong>Project Type:</strong> ${projectType}</p>
+        ${projectType === "residential" && houseType 
+          ? `<p><strong>House Type:</strong> ${houseType}</p>` 
+          : ""}
+        <p><strong>Budget:</strong> ${budget || 'Not specified'}</p>
+        <p><strong>Location:</strong> ${location}</p>
+        <p><strong>Timeline:</strong> ${timeline || 'Not specified'}</p>
+        
+        <h3>Description:</h3>
+        <p>${description || 'No additional details provided'}</p>
+        
+        <hr>
+        <p><em>Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</em></p>
+      </div>
+    `
+  };
 
-    res.status(200).json({
-      success: true,
-      message: 'Enquiry email sent successfully!'
-    });
-
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to send enquiry email'
-    });
-  }
+  transporter.sendMail(mailOptions)
+    .then(() => console.log("✅ Enquiry email sent"))
+    .catch(err => console.error("❌ Error sending email:", err));
 });
 
 const PORT = process.env.PORT || 5000;
