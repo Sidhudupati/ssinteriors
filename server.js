@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
@@ -18,17 +18,8 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS // App password
-  }
-});
-
 // API endpoint to handle enquiries
-app.post('/api/enquiry', (req, res) => {
+app.post('/api/enquiry', async (req, res) => {
   const {
     name,
     email,
@@ -41,46 +32,59 @@ app.post('/api/enquiry', (req, res) => {
     description
   } = req.body;
 
-  // ✅ Respond immediately so frontend feels fast
+  // ✅ Respond immediately to frontend
   res.status(200).json({
     success: true,
     message: 'Enquiry received! We will contact you soon.'
   });
 
-  // ⏳ Send email in background
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: "ssinteriorsliving@gmail.com",
-    subject: `New Interior Design Enquiry - ${name}`,
-    html: `
-      <h2>New Enquiry from SS Interiors Website</h2>
-      <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
-        <h3>Contact Information:</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        
-        <h3>Project Details:</h3>
-        <p><strong>Project Type:</strong> ${projectType}</p>
-        ${projectType === "residential" && houseType 
-          ? `<p><strong>House Type:</strong> ${houseType}</p>` 
-          : ""}
-        <p><strong>Budget:</strong> ${budget || 'Not specified'}</p>
-        <p><strong>Location:</strong> ${location}</p>
-        <p><strong>Timeline:</strong> ${timeline || 'Not specified'}</p>
-        
-        <h3>Description:</h3>
-        <p>${description || 'No additional details provided'}</p>
-        
-        <hr>
-        <p><em>Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</em></p>
-      </div>
-    `
-  };
+  // ⏳ Send email in background using Sender API
+  try {
+    const response = await fetch("https://api.sender.net/v2/email", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.SENDER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: {
+          email: "ssinteriorsliving@gmail.com", // must be verified in Sender
+          name: "SS Interiors"
+        },
+        to: [{ email: "ssinteriorsliving@gmail.com" }],
+        subject: `New Interior Design Enquiry - ${name}`,
+        html: `
+          <h2>New Enquiry from SS Interiors Website</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
+            <h3>Contact Information:</h3>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Phone:</strong> ${phone}</p>
+            
+            <h3>Project Details:</h3>
+            <p><strong>Project Type:</strong> ${projectType}</p>
+            ${projectType === "residential" && houseType 
+              ? `<p><strong>House Type:</strong> ${houseType}</p>` 
+              : ""}
+            <p><strong>Budget:</strong> ${budget || 'Not specified'}</p>
+            <p><strong>Location:</strong> ${location}</p>
+            <p><strong>Timeline:</strong> ${timeline || 'Not specified'}</p>
+            
+            <h3>Description:</h3>
+            <p>${description || 'No additional details provided'}</p>
+            
+            <hr>
+            <p><em>Submitted on: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</em></p>
+          </div>
+        `
+      })
+    });
 
-  transporter.sendMail(mailOptions)
-    .then(() => console.log("✅ Enquiry email sent"))
-    .catch(err => console.error("❌ Error sending email:", err));
+    const data = await response.json();
+    console.log("✅ Enquiry email sent via Sender:", data);
+  } catch (err) {
+    console.error("❌ Error sending email via Sender:", err);
+  }
 });
 
 const PORT = process.env.PORT || 5000;
